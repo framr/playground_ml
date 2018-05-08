@@ -17,6 +17,7 @@ class Variable(object):
         self.children = []
         self.parents = []
         self.value = value
+        self._grad = None
 
     def eval(self):
         return self.value
@@ -25,43 +26,60 @@ class Variable(object):
         z = Variable(self.value + other.value)
         self.children.append(Child(z, 1))
         other.children.append(Child(z, 1))
+        z.parents.extend([self, other])
         return z
 
     def __mul__(self, other):
         z = Variable(self.value * other.value)
         self.children.append(Child(z, other.value))
         other.children.append(Child(z, self.value))
+        z.parents.extend([self, other])
         return z
+
+    def zero_grad(self):
+        self._grad = 0
 
     @property
     def grad(self):
+        if self._grad is not None:
+            return self._grad
         if not self.children:
             return 1.0
         else:
-            return sum([child.node.grad * child.grad for child in self.children])
+            self._grad = sum([child.node.grad * child.grad for child in self.children])
+            return self._grad
+
+def zero_grad(root):
+    root.zero_grad()
+    for p in root.parents:
+        p.zero_grad()
 
 
 def exp(x):
     z = Variable(math.exp(x.value))
     x.children.append(Child(z, math.exp(x.value)))
+    z.parents.append(x)
     return z
 
 
 def sin(x):
     z = Variable(math.sin(x.value))
     x.children.append(Child(z, math.cos(x.value)))
+    z.parents.append(x)
     return z
 
 
 def cos(x):
     z = Variable(math.cos(x.value))
-    x.children.append(Child(z, -math.cos(x.value)))
+    x.children.append(Child(z, -math.cos(x.value))) 
+    z.parents.append(x)
     return z
 
 
 def log(x):
     z = Variable(math.log(x.value))
     x.children.append(Child(z, 1 / x.value))
+    z.parents.append(x)
     return z
 
 
