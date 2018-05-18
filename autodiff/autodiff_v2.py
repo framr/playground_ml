@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import sys
 import math
 from collections import namedtuple
@@ -9,15 +8,12 @@ Child = namedtuple("Child", "node grad")
 
 
 class Variable(object):
-    """
-    Simple version.
-    Forward pass is done once at the initialization.
-    """
-    def __init__(self, value):
+    def __init__(self, func):
         self.children = []
         self.parents = []
-        self.value = value
+        self.value = None
         self._grad = None
+        self._func = func
 
     def eval(self):
         return self.value
@@ -39,6 +35,9 @@ class Variable(object):
     def zero_grad(self):
         self._grad = 0
 
+    def reset(self):
+        self.value = None
+
     @property
     def grad(self):
         if self._grad is not None:
@@ -50,6 +49,16 @@ class Variable(object):
             return self._grad
 
 
+def forward(feed_dict):
+    """
+    do forward pass.
+
+    Args:
+        feed_dict: dict mapping nodes to values 
+    """
+    
+    
+
 def zero_grad(root):
     visited = set()
     def _zero_grad(node):
@@ -59,6 +68,18 @@ def zero_grad(root):
             if p not in visited:
                 zero_grad(p)
     _zero_grad(root)
+
+
+def reset_values(root):
+    visited = set()
+    def _reset(node):
+        visited.add(node)
+        node.reset()
+        for p in node.parents:
+            if p not in visited:
+                _reset(p)
+    _reset(root)
+
 
 
 def exp(x):
